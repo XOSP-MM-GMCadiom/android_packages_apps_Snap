@@ -21,9 +21,9 @@ import android.net.Uri;
 
 public class IntentHelper {
 
-    private static final String GALLERY_PACKAGE_NAME = "com.android.gallery3d";
+    private static final String GALLERY_PACKAGE_NAME = "com.sonyericsson.album";
     private static final String GALLERY_ACTIVITY_CLASS =
-        "com.android.gallery3d.app.GalleryActivity";
+        "com.sonyericsson.album.MainActivity";
 
     public static Intent getGalleryIntent(Context context) {
         return new Intent(Intent.ACTION_MAIN)

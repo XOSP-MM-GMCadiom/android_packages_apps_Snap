@@ -136,10 +136,10 @@ public class CameraActivity extends Activity
     public static final String MEDIA_ITEM_PATH = "media-item-path";
     public static final String KEY_TOTAL_NUMBER = "total-number";
 
-    // Used to show whether Gallery was launched from Snapcam
+    // Used to show whether Album was launched from Snapcam
     private static final String KEY_FROM_SNAPCAM = "from-snapcam";
 
-    // The intent extra for camera from secure lock screen. True if the gallery
+    // The intent extra for camera from secure lock screen. True if the Album
     // should only show newly captured pictures. sSecureAlbumId does not
     // increment. This is used when switching between camera, camcorder, and
     // panorama. If the extra is not set, it is in the normal camera mode.
@@ -607,7 +607,7 @@ public class CameraActivity extends Activity
 
     private void gotoViewPhoto(Uri uri) {
         try {
-            Log.w(TAG, "Gallery not found");
+            Log.w(TAG, "Album not found");
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(intent);
             intent.putExtra(KEY_FROM_SNAPCAM, true);
@@ -1284,7 +1284,7 @@ public class CameraActivity extends Activity
                     startActivity(IntentHelper.getGalleryIntent(this));
                     return true;
                 } catch (ActivityNotFoundException e) {
-                    Log.w(TAG, "Failed to launch gallery activity, closing");
+                    Log.w(TAG, "Failed to launch Album activity, closing");
                     finish();
                 }
             case R.id.action_delete:
@@ -1521,7 +1521,7 @@ public class CameraActivity extends Activity
                                 UsageStatistics.ACTION_GALLERY, null);
                         startActivity(IntentHelper.getGalleryIntent(CameraActivity.this));
                     } catch (ActivityNotFoundException e) {
-                        Log.w(TAG, "Failed to launch gallery activity, closing");
+                        Log.w(TAG, "Failed to launch Album activity, closing");
                     }
                     finish();
                 }
