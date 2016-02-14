@@ -1227,16 +1227,16 @@ public class PhotoModule
             if (needRestartPreview) {
                 Log.d(TAG, "JpegPictureCallback: needRestartPreview");
                 setupPreview();
-                if (CameraUtil.FOCUS_MODE_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode())
-                        || CameraUtil.FOCUS_MODE_MW_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode())) {
+                if (CameraUtil.FOCUS_MODE_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode(false))
+                        || CameraUtil.FOCUS_MODE_MW_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode(false))) {
                     mCameraDevice.cancelAutoFocus();
                 }
             } else if (((mCameraState != LONGSHOT) && (mReceivedSnapNum == mBurstSnapNum))
                         || isLongshotDone()){
                 mUI.enableShutter(true);
                 mFocusManager.resetTouchFocus();
-                if (CameraUtil.FOCUS_MODE_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode())
-                        || CameraUtil.FOCUS_MODE_MW_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode())) {
+                if (CameraUtil.FOCUS_MODE_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode(false))
+                        || CameraUtil.FOCUS_MODE_MW_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode(false))) {
                     mCameraDevice.cancelAutoFocus();
                 }
                 if (!mIsImageCaptureIntent) {
@@ -1696,7 +1696,7 @@ public class PhotoModule
         }
         if ((mManual3AEnabled & MANUAL_FOCUS) != 0) {
             mUI.overrideSettings(CameraSettings.KEY_FOCUS_MODE,
-                    mFocusManager.getFocusMode());
+                    mFocusManager.getFocusMode(false));
         }
     }
 
@@ -1788,7 +1788,7 @@ public class PhotoModule
         if (!Parameters.SCENE_MODE_AUTO.equals(mSceneMode)) {
             flashMode = mParameters.FLASH_MODE_OFF;
             String whiteBalance = Parameters.WHITE_BALANCE_AUTO;
-            focusMode = mFocusManager.getFocusMode();
+            focusMode = mFocusManager.getFocusMode(false);
             colorEffect = mParameters.getColorEffect();
             String defaultEffect = mActivity.getString(R.string.pref_camera_coloreffect_default);
             if (CameraUtil.SCENE_MODE_HDR.equals(mSceneMode)
@@ -2083,7 +2083,8 @@ public class PhotoModule
 
     @Override
     public synchronized void onShutterButtonClick() {
-        if (mPaused || mShutterPressing
+        if ((mCameraDevice == null)
+                || mPaused || mShutterPressing
                 || mUI.collapseCameraControls()
                 || (mCameraState == SWITCHING_CAMERA)
                 || (mCameraState == PREVIEW_STOPPED)
@@ -2459,6 +2460,7 @@ public class PhotoModule
         if (null != mCameraDevice ) {
             mCameraDevice.cancelAutoFocus();
             setCameraState(IDLE);
+            mFocusManager.setAeAwbLock(false);
             setCameraParameters(UPDATE_PARAM_PREFERENCE);
         }
     }
@@ -2680,8 +2682,8 @@ public class PhotoModule
         if (!mSnapshotOnIdle) {
             // If the focus mode is continuous autofocus, call cancelAutoFocus to
             // resume it because it may have been paused by autoFocus call.
-                if (CameraUtil.FOCUS_MODE_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode()) ||
-                    CameraUtil.FOCUS_MODE_MW_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode())) {
+            if (CameraUtil.FOCUS_MODE_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode(false)) ||
+                    CameraUtil.FOCUS_MODE_MW_CONTINUOUS_PICTURE.equals(mFocusManager.getFocusMode(false))) {
                 mCameraDevice.cancelAutoFocus();
             }
         } else {
@@ -3177,10 +3179,10 @@ public class PhotoModule
                 }
             } else if (mFocusManager.isTouch()) {
                 mFocusManager.overrideFocusMode(null);
-                mParameters.setFocusMode(mFocusManager.getFocusMode());
+                mParameters.setFocusMode(mFocusManager.getFocusMode(false));
             } else {
                 // If not supported use the current mode
-                mFocusManager.overrideFocusMode(mFocusManager.getFocusMode());
+                mFocusManager.overrideFocusMode(mFocusManager.getFocusMode(false));
             }
 
             if (!pictureFormat.equals(PIXEL_FORMAT_JPEG)) {
@@ -3197,7 +3199,7 @@ public class PhotoModule
             mFocusManager.setZslEnable(false);
             if ((mManual3AEnabled & MANUAL_FOCUS) == 0) {
                 mFocusManager.overrideFocusMode(null);
-                mParameters.setFocusMode(mFocusManager.getFocusMode());
+                mParameters.setFocusMode(mFocusManager.getFocusMode(false));
             }
         }
         // Set face detetction parameter.
@@ -3345,7 +3347,7 @@ public class PhotoModule
         // initialize focus mode
         if ((mManual3AEnabled & MANUAL_FOCUS) == 0) {
             mFocusManager.overrideFocusMode(null);
-            mParameters.setFocusMode(mFocusManager.getFocusMode());
+            mParameters.setFocusMode(mFocusManager.getFocusMode(false));
         }
 
         // Set picture size.
@@ -3555,11 +3557,11 @@ public class PhotoModule
             // Set focus mode.
             if ((mManual3AEnabled & MANUAL_FOCUS) == 0) {
                 mFocusManager.overrideFocusMode(null);
-                mParameters.setFocusMode(mFocusManager.getFocusMode());
+                mParameters.setFocusMode(mFocusManager.getFocusMode(false));
             }
 
             // Set focus time.
-            mFocusManager.setFocusTime(Integer.valueOf(
+            mFocusManager.setFocusTime(Integer.decode(
                     mPreferences.getString(CameraSettings.KEY_FOCUS_TIME,
                     mActivity.getString(R.string.pref_camera_focustime_default))));
         } else {
@@ -3800,7 +3802,7 @@ public class PhotoModule
             alert.show();
         } else {
             mManual3AEnabled &= ~MANUAL_FOCUS;
-            mParameters.setFocusMode(mFocusManager.getFocusMode());
+            mParameters.setFocusMode(mFocusManager.getFocusMode(false));
             mUI.overrideSettings(CameraSettings.KEY_FOCUS_MODE, null);
             updateCommonManual3ASettings();
             onSharedPreferenceChanged();
@@ -4201,6 +4203,7 @@ public class PhotoModule
         mLocationManager.recordLocation(recordLocation);
         if(needRestart()){
             Log.v(TAG, "Restarting Preview... Camera Mode Changed");
+            setCameraParameters(UPDATE_PARAM_PREFERENCE);
             stopPreview();
             startPreview();
             setCameraState(IDLE);

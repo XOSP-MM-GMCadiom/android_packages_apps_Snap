@@ -268,6 +268,11 @@ public class FocusOverlayManager {
             // sound.
             if (focused) {
                 mState = STATE_SUCCESS;
+                // Lock exposure and white balance
+                if (mFocusTime != 200) {
+                    setAeAwbLock(true);
+                    mListener.setFocusParameters();
+                }
             } else {
                 mState = STATE_FAIL;
             }
@@ -278,12 +283,17 @@ public class FocusOverlayManager {
             // take the picture now.
             if (focused) {
                 mState = STATE_SUCCESS;
+                // Lock exposure and white balance
+                if (mFocusTime != 200) {
+                    setAeAwbLock(true);
+                    mListener.setFocusParameters();
+                }
             } else {
                 mState = STATE_FAIL;
             }
             // If this is triggered by touch focus, cancel focus after a
             // while.
-            if ((mFocusArea != null) && (mFocusTime != 0)) {
+            if (mFocusArea != null) {
                 mHandler.sendEmptyMessageDelayed(RESET_TOUCH_FOCUS, mFocusTime);
             }
             if (shutterButtonPressed) {
@@ -383,15 +393,18 @@ public class FocusOverlayManager {
         // Stop face detection because we want to specify focus and metering area.
         mListener.stopFaceDetection();
 
+        if (mFocusTime == 200) {
+            setAeAwbLock(true);
+            mListener.setFocusParameters();
+        }
+
         // Set the focus area and metering area.
         mListener.setFocusParameters();
         if (mFocusAreaSupported) {
             autoFocus();
         } else {  // Just show the indicator in all other cases.
             mHandler.removeMessages(RESET_TOUCH_FOCUS);
-            if (mFocusTime != 0) {
-                mHandler.sendEmptyMessageDelayed(RESET_TOUCH_FOCUS, mFocusTime);
-            }
+            mHandler.sendEmptyMessageDelayed(RESET_TOUCH_FOCUS, mFocusTime);
         }
     }
 
@@ -426,6 +439,7 @@ public class FocusOverlayManager {
         // Otherwise, focus mode stays at auto and the tap area passed to the
         // driver is not reset.
         resetTouchFocus();
+        setAeAwbLock(false);
         mListener.cancelAutoFocus();
         mState = STATE_IDLE;
         mHandler.removeMessages(RESET_TOUCH_FOCUS);
@@ -438,7 +452,7 @@ public class FocusOverlayManager {
         }
     }
 
-    public String getFocusMode() {
+    public String getFocusMode(boolean fromVideo) {
         if (mOverrideFocusMode != null) return mOverrideFocusMode;
         if (mParameters == null) return Parameters.FOCUS_MODE_AUTO;
         List<String> supportedFocusModes = mParameters.getSupportedFocusModes();
@@ -448,8 +462,13 @@ public class FocusOverlayManager {
             mFocusMode = Parameters.FOCUS_MODE_AUTO;
         } else {
             // The default is continuous autofocus.
-            mFocusMode = mPreferences.getString(
-                    CameraSettings.KEY_FOCUS_MODE, null);
+            if (fromVideo) {
+                mFocusMode = mPreferences.getString(
+                        CameraSettings.KEY_VIDEOCAMERA_FOCUS_MODE, null);
+            } else {
+                mFocusMode = mPreferences.getString(
+                        CameraSettings.KEY_FOCUS_MODE, null);
+            }
 
             // Try to find a supported focus mode from the default list.
             if (mFocusMode == null) {
@@ -549,10 +568,7 @@ public class FocusOverlayManager {
     }
 
     private boolean needAutoFocusCall() {
-        String focusMode = getFocusMode();
-        return !(focusMode.equals(Parameters.FOCUS_MODE_INFINITY)
-                || focusMode.equals(Parameters.FOCUS_MODE_FIXED)
-                || focusMode.equals(Parameters.FOCUS_MODE_EDOF));
+        return getFocusMode(false).equals(Parameters.FOCUS_MODE_AUTO);
     }
 
     public void setZslEnable(boolean value) {

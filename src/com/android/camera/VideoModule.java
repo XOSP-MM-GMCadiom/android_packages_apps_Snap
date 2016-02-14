@@ -118,6 +118,8 @@ public class VideoModule implements CameraModule,
     private Parameters mParameters;
     private boolean mFocusAreaSupported;
     private boolean mMeteringAreaSupported;
+    private boolean mAeLockSupported;
+    private boolean mAwbLockSupported;
 
     private boolean mIsInReviewMode;
     private boolean mSnapshotInProgress = false;
@@ -502,6 +504,20 @@ public class VideoModule implements CameraModule,
         mPendingSwitchCameraId = -1;
     }
 
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    private void setAutoExposureLockIfSupported() {
+        if (mAeLockSupported) {
+            mParameters.setAutoExposureLock(mFocusManager.getAeAwbLock());
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    private void setAutoWhiteBalanceLockIfSupported() {
+        if (mAwbLockSupported) {
+            mParameters.setAutoWhiteBalanceLock(mFocusManager.getAeAwbLock());
+        }
+    }
+
     @Override
     public void autoFocus() {
         Log.e(TAG, "start autoFocus.");
@@ -534,8 +550,10 @@ public class VideoModule implements CameraModule,
             mParameters.setFocusAreas(mFocusManager.getFocusAreas());
         if (mMeteringAreaSupported)
             mParameters.setMeteringAreas(mFocusManager.getMeteringAreas());
+        setAutoExposureLockIfSupported();
+        setAutoWhiteBalanceLockIfSupported();
         if (mFocusAreaSupported || mMeteringAreaSupported) {
-            mParameters.setFocusMode(mFocusManager.getFocusMode());
+            mParameters.setFocusMode(mFocusManager.getFocusMode(true));
             mCameraDevice.setParameters(mParameters);
         }
     }
@@ -2509,7 +2527,15 @@ public class VideoModule implements CameraModule,
             mParameters.setVideoRotation(videoRotation);
         }
 
+        // Set focus mode
+        mParameters.setFocusMode(mFocusManager.getFocusMode(true));
+
+        // Set focus time.
+        mFocusManager.setFocusTime(Integer.decode(
+                mPreferences.getString(CameraSettings.KEY_VIDEOCAMERA_FOCUS_TIME,
+                mActivity.getString(R.string.pref_camera_video_focustime_default))));
     }
+
     @SuppressWarnings("deprecation")
     private void setCameraParameters() {
         Log.d(TAG,"Preview dimension in App->"+mDesiredPreviewWidth+"X"+mDesiredPreviewHeight);
@@ -2564,7 +2590,7 @@ public class VideoModule implements CameraModule,
         }
 
         // Set focus mode
-        mParameters.setFocusMode(mFocusManager.getFocusMode());
+        mParameters.setFocusMode(mFocusManager.getFocusMode(true));
 
         mParameters.set(CameraUtil.RECORDING_HINT, CameraUtil.TRUE);
 
@@ -2742,6 +2768,8 @@ public class VideoModule implements CameraModule,
     private void initializeCapabilities() {
         mFocusAreaSupported = CameraUtil.isFocusAreaSupported(mParameters);
         mMeteringAreaSupported = CameraUtil.isMeteringAreaSupported(mParameters);
+        mAeLockSupported = CameraUtil.isAutoExposureLockSupported(mParameters);
+        mAwbLockSupported = CameraUtil.isAutoWhiteBalanceLockSupported(mParameters);
     }
 
     // Preview texture has been copied. Now camera can be released and the
