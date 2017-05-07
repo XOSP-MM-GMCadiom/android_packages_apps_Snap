@@ -34,9 +34,12 @@ import android.util.Log;
 import com.android.camera.util.ApiHelper;
 import com.android.camera.util.CameraUtil;
 import com.android.camera.util.GcamHelper;
+import com.android.camera.util.MultiMap;
+
 import org.codeaurora.snapcam.R;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.HashMap;
@@ -135,6 +138,7 @@ public class CameraSettings {
     private static final String KEY_QC_SUPPORTED_FACE_RECOGNITION_MODES = "face-recognition-values";
     private static final String KEY_QC_SUPPORTED_DIS_MODES = "dis-values";
     private static final String KEY_QC_SUPPORTED_SEE_MORE_MODES = "see-more-values";
+    private static final String KEY_QC_SUPPORTED_STILL_MORE_MODES = "still-more-values";
     private static final String KEY_QC_SUPPORTED_CDS_MODES = "cds-mode-values";
     private static final String KEY_QC_SUPPORTED_VIDEO_CDS_MODES = "video-cds-mode-values";
     private static final String KEY_QC_SUPPORTED_TNR_MODES = "tnr-mode-values";
@@ -155,6 +159,7 @@ public class CameraSettings {
     public static final String KEY_QC_FSSR = "FSSR";
     public static final String KEY_QC_TP = "true-portrait";
     public static final String KEY_QC_MULTI_TOUCH_FOCUS = "multi-touch-focus";
+    public static final String KEY_QC_STILL_MORE = "still-more";
     public static final String KEY_QC_FACE_RECOGNITION = "face-recognition";
     public static final String KEY_QC_DIS_MODE = "dis";
     public static final String KEY_QC_CDS_MODE = "cds-mode";
@@ -238,6 +243,8 @@ public class CameraSettings {
     public static final String KEY_QC_SUPPORTED_MANUAL_FOCUS_MODES = "manual-focus-modes";
     public static final String KEY_QC_SUPPORTED_MANUAL_EXPOSURE_MODES = "manual-exposure-modes";
     public static final String KEY_QC_SUPPORTED_MANUAL_WB_MODES = "manual-wb-modes";
+
+    public static final String KEY_REQUEST_PERMISSION  = "request_permission";
 
     public static final String KEY_SELFIE_FLASH = "pref_selfie_flash_key";
 
@@ -399,24 +406,39 @@ public class CameraSettings {
         return supported.get(0);
     }
 
-    public static void initialCameraPictureSize(
-            Context context, Parameters parameters) {
-        // When launching the camera app first time, we will set the picture
-        // size to the first one in the list defined in "arrays.xml" and is also
-        // supported by the driver.
+    public static void initialCameraPictureSize(Context context, Parameters parameters) {
+        // set the picture size to the largest supported size
         List<Size> supported = parameters.getSupportedPictureSizes();
-        if (supported == null) return;
-        for (String candidate : context.getResources().getStringArray(
-                R.array.pref_camera_picturesize_entryvalues)) {
-            if (setCameraPictureSize(candidate, supported, parameters)) {
-                SharedPreferences.Editor editor = ComboPreferences
-                        .get(context).edit();
-                editor.putString(KEY_PICTURE_SIZE, candidate);
-                editor.apply();
-                return;
-            }
+        if (supported == null || supported.isEmpty()) { return; }
+        Size largest = getLargestSize(supported);
+        String candidate = largest.width + "x" + largest.height;
+        if (setCameraPictureSize(candidate, supported, parameters)) {
+            SharedPreferences.Editor editor =
+                    ComboPreferences.get(context).edit();
+            editor.putString(KEY_PICTURE_SIZE, candidate);
+            editor.apply();
+            return;
         }
         Log.e(TAG, "No supported picture size found");
+    }
+
+    private static Size getLargestSize(List<Size> sizes) {
+        if (sizes == null || sizes.isEmpty()) {
+            return null;
+        }
+
+        Size max = null;
+        int maxSize = -1;
+
+        for (Size candidate : sizes) {
+            int candidateSize = candidate.width * candidate.height;
+            if (candidateSize > maxSize) {
+                maxSize = candidateSize;
+                max = candidate;
+            }
+        }
+
+        return max;
     }
 
     public static void removePreferenceFromScreen(
@@ -545,6 +567,7 @@ public class CameraSettings {
         str += ',' + params.get(KEY_QC_SUPPORTED_MTF_MODES);
         str += ',' + mContext.getString(R.string.pref_camera_advanced_feature_default);
         str += ',' + params.get(KEY_QC_SUPPORTED_RE_FOCUS_MODES);
+        str += ',' + params.get(KEY_QC_SUPPORTED_STILL_MORE_MODES);
         return split(str);
     }
 
@@ -606,6 +629,14 @@ public class CameraSettings {
 
     public static List<String> getSupportedPreviewFormats(Parameters params) {
         String str = params.get(KEY_QC_SUPPORTED_PREVIEW_FORMATS);
+        if (str == null) {
+            return null;
+        }
+        return split(str);
+    }
+
+    public static List<String> getSupportedStillMoreModes(Parameters params) {
+        String str = params.get(KEY_QC_SUPPORTED_STILL_MORE_MODES);
         if (str == null) {
             return null;
         }
@@ -870,6 +901,7 @@ public class CameraSettings {
         ListPreference timeLapseInterval = group.findPreference(KEY_VIDEO_TIME_LAPSE_FRAME_INTERVAL);
         ListPreference pictureSize = group.findPreference(KEY_PICTURE_SIZE);
         ListPreference whiteBalance =  group.findPreference(KEY_WHITE_BALANCE);
+        ListPreference chromaFlash = group.findPreference(KEY_QC_CHROMA_FLASH);
         ListPreference sceneMode = group.findPreference(KEY_SCENE_MODE);
         ListPreference flashMode = group.findPreference(KEY_FLASH_MODE);
         ListPreference focusMode = group.findPreference(KEY_FOCUS_MODE);
@@ -888,6 +920,7 @@ public class CameraSettings {
         ListPreference videoHfrMode =
                 group.findPreference(KEY_VIDEO_HIGH_FRAME_RATE);
         ListPreference seeMoreMode = group.findPreference(KEY_SEE_MORE);
+        ListPreference savePath = group.findPreference(KEY_CAMERA_SAVEPATH);
 
         // Since the screen could be loaded from different resources, we need
         // to check if the preference is available here
@@ -907,13 +940,24 @@ public class CameraSettings {
         }
 
         if (pictureSize != null) {
-            filterUnsupportedOptions(group, pictureSize, sizeListToStringList(
-                    mParameters.getSupportedPictureSizes()));
-            filterSimilarPictureSize(group, pictureSize);
+            formatPictureSizes(mContext, pictureSize, mParameters);
+            resetIfInvalid(pictureSize);
+
         }
         if (whiteBalance != null) {
             filterUnsupportedOptions(group,
                     whiteBalance, mParameters.getSupportedWhiteBalance());
+        }
+
+        if (chromaFlash != null) {
+            List<String> supportedAdvancedFeatures =
+                    getSupportedAdvancedFeatures(mParameters);
+            if (hasChromaFlashScene(mContext) || !CameraUtil.isSupported(
+                        mContext.getString(R.string
+                            .pref_camera_advanced_feature_value_chromaflash_on),
+                        supportedAdvancedFeatures)) {
+                removePreference(group, chromaFlash.getKey());
+            }
         }
 
         if (sceneMode != null) {
@@ -926,6 +970,20 @@ public class CameraSettings {
                         supportedAdvancedFeatures)) {
                 supportedSceneModes.add(mContext.getString(R.string
                             .pref_camera_advanced_feature_value_refocus_on));
+            }
+            if (CameraUtil.isSupported(
+                        mContext.getString(R.string
+                                .pref_camera_advanced_feature_value_optizoom_on),
+                        supportedAdvancedFeatures)) {
+                supportedSceneModes.add(mContext.getString(R.string
+                            .pref_camera_advanced_feature_value_optizoom_on));
+            }
+            if (hasChromaFlashScene(mContext) && CameraUtil.isSupported(
+                        mContext.getString(R.string
+                                .pref_camera_advanced_feature_value_chromaflash_on),
+                        supportedAdvancedFeatures)) {
+                supportedSceneModes.add(mContext.getString(R.string
+                            .pref_camera_advanced_feature_value_chromaflash_on));
             }
             filterUnsupportedOptions(group, sceneMode, supportedSceneModes);
         }
@@ -976,7 +1034,7 @@ public class CameraSettings {
             final String CAMERA_SAVEPATH_SDCARD = "1";
             final int CAMERA_SAVEPATH_SDCARD_IDX = 1;
             final int CAMERA_SAVEPATH_PHONE_IDX = 0;
-            ListPreference savePath = group.findPreference(KEY_CAMERA_SAVEPATH);
+
             SharedPreferences pref = group.getSharedPreferences();
             String savePathValue = null;
             if (pref != null) {
@@ -992,7 +1050,13 @@ public class CameraSettings {
                     Log.d(TAG, "set Phone as save path when sdCard is unavailable.");
                     savePath.setValueIndex(CAMERA_SAVEPATH_PHONE_IDX);
                 }
-           }
+            }
+        }
+        if (savePath != null) {
+            Log.d(TAG, "check storage menu " +  SDCard.instance().isWriteable());
+            if (!SDCard.instance().isWriteable()) {
+                removePreference(group, savePath.getKey());
+            }
         }
 
         qcomInitPreferences(group);
@@ -1381,4 +1445,187 @@ public class CameraSettings {
         return split(str);
     }
 
+    public static boolean hasChromaFlashScene(Context context) {
+        String[] sceneModes = context.getResources().getStringArray(
+                R.array.pref_camera_scenemode_entryvalues);
+        for (String mode : sceneModes) {
+            if (mode.equals(context.getResources().getString(R.string
+                            .pref_camera_advanced_feature_value_chromaflash_on))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // common aspect ratios used for bucketing camera picture sizes
+    private enum AspectRatio {
+        FourThree(1.27, 1.42, R.string.pref_camera_aspectratio_43),
+        ThreeTwo(1.42, 1.55, R.string.pref_camera_aspectratio_32),
+        SixteenTen(1.55, 1.63, R.string.pref_camera_aspectratio_1610),
+        FiveThree(1.63, 1.73, R.string.pref_camera_aspectratio_53),
+        SixteenNine(1.73, 1.81, R.string.pref_camera_aspectratio_169),
+        OneOne(0.95, 1.05, R.string.pref_camera_aspectratio_11),
+        Wide(1.81, Float.MAX_VALUE, R.string.pref_camera_aspectratio_wide),
+        Other(Float.MIN_VALUE, 1.27, 0);
+
+        public double min;
+        public double max;
+        public int resourceId;
+
+        AspectRatio(double min, double max, int rid) {
+            this.min = min;
+            this.max = max;
+            this.resourceId = rid;
+        }
+
+        boolean contains(double ratio) {
+            return ratio >= min && ratio < max;
+        }
+
+        static AspectRatio of(int width, int height) {
+            double ratio = (double) width / height;
+            for (AspectRatio aspect : values()) {
+                if (aspect.contains(ratio)) {
+                    return aspect;
+                }
+            }
+            return null;
+        }
+    }
+
+    // track a camera picture size along with some derived info
+    private static class SizeEntry implements Comparable<SizeEntry> {
+        AspectRatio ratio;
+        Size size;
+        int pixels;
+
+        SizeEntry(Size size) {
+            this.ratio = AspectRatio.of(size.width, size.height);
+            this.size = size;
+            this.pixels = size.width * size.height;
+        }
+
+        @Override
+        public int compareTo(SizeEntry another) {
+            return another.pixels - pixels;
+        }
+
+        String resolution() {
+            return size.width + "x" + size.height;
+        }
+
+        String formatted(Context context) {
+            double pixelCount = pixels / 1000000d; // compute megapixels
+
+            if (pixelCount > 1.9 && pixelCount < 2.0) { //conventional rounding
+                pixelCount = 2.0;
+            }
+
+            pixelCount = adjustForLocale(pixelCount); // some locales group differently
+            if (pixelCount > 0.1) {
+                String ratioString = ratio.resourceId == 0
+                        ? resolution() : context.getString(ratio.resourceId);
+                return context.getString(R.string.pref_camera_megapixel_format,
+                        ratioString, pixelCount);
+            } else {
+                // for super tiny stuff, just give the raw resolution
+                return resolution();
+            }
+        }
+
+        private static final String KOREAN = Locale.KOREAN.getLanguage();
+        private static final String CHINESE = Locale.CHINESE.getLanguage();
+
+        private double adjustForLocale(double megapixels) {
+            Locale locale = Locale.getDefault();
+            String language = locale != null ? locale.getLanguage() : null;
+
+            // Chinese and Korean locales prefer to count by ten thousands
+            // instead of by millions - so we multiply the megapixels by 100
+            // (with a little rounding on the way)
+            if (KOREAN.equals(language) || CHINESE.equals(language)) {
+                megapixels = Math.round(megapixels * 10);
+                return megapixels * 10; // wàn
+            }
+            return megapixels;
+        }
+    }
+
+    private static void formatPictureSizes(Context context,
+            ListPreference pictureSize, Parameters parameters) {
+        List<Size> supported = parameters.getSupportedPictureSizes();
+        if (supported == null || supported.isEmpty()) {
+            return;
+        }
+
+        // convert list of sizes to list of "size entries"
+        List<SizeEntry> sizes = new ArrayList<SizeEntry>(supported.size());
+        for (Size candidate : supported) {
+            sizes.add(new SizeEntry(candidate));
+        }
+
+        // sort descending by pixel size
+        Collections.sort(sizes);
+
+        // trim really small sizes but never leave less than six choices
+        int minimum = context.getResources().getInteger(R.integer.minimum_picture_size);
+        while (sizes.size() > 6) {
+            int lastIndex = sizes.size() - 1;
+            SizeEntry last = sizes.get(lastIndex);
+            if (last.pixels < minimum) {
+                sizes.remove(lastIndex);
+            } else {
+                break;
+            }
+        }
+
+        // re-sort into aspect ratio buckets
+        MultiMap<AspectRatio,SizeEntry> buckets = new MultiMap<>();
+        for (SizeEntry size : sizes) {
+            buckets.put(size.ratio, size);
+        }
+
+        // build the final lists - group by aspect ratio, with those
+        // buckets having the largest image sizes positioned first
+        List<String> entries = new ArrayList<String>(buckets.size());
+        List<String> entryValues = new ArrayList<String>(buckets.size());
+        while (!buckets.isEmpty()) {
+            // find the bucket with the largest first element
+            int maxSize = 0;
+            AspectRatio chosenKey = null;
+            for (AspectRatio ratio : buckets.keySet()) {
+                int size = buckets.get(ratio).get(0).pixels;
+                if (size > maxSize) {
+                    maxSize = size;
+                    chosenKey = ratio;
+                }
+            }
+
+            List<SizeEntry> bucket = buckets.remove(chosenKey);
+
+            // trim chosen bucket of similarly sized entries, but
+            // never leave less that three
+            int index = 0;
+            while (bucket.size() > 3 && bucket.size() > index + 1) {
+                SizeEntry current = bucket.get(index);
+                SizeEntry next = bucket.get(index + 1);
+                // if the two buckets differ in size by less than 30%
+                // remove the smaller one, otherwise advance through the list
+                if ((double) current.pixels / next.pixels < 1.3) {
+                    bucket.remove(index + 1);
+                } else {
+                    index++;
+                }
+            }
+
+            // transfer chosen, trimmed bucket to final list
+            for (SizeEntry size : bucket) {
+                entryValues.add(size.resolution());
+                entries.add(size.formatted(context));
+            }
+        }
+
+        pictureSize.setEntries(entries.toArray(new String[entries.size()]));
+        pictureSize.setEntryValues(entryValues.toArray(new String[entryValues.size()]));
+    }
 }

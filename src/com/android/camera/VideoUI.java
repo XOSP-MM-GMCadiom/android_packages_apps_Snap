@@ -118,15 +118,10 @@ public class VideoUI implements PieRenderer.PieListener,
     private int mTopMargin = 0;
     private int mBottomMargin = 0;
 
-    private OnLayoutChangeListener mLayoutListener = new OnLayoutChangeListener() {
-        @Override
-        public void onLayoutChange(View v, int left, int top, int right,
-                int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
-            if(mVideoMenu != null) {
-                mVideoMenu.tryToCloseSubList();
-            }
-        }
-    };
+    public enum SURFACE_STATUS {
+        HIDE,
+        SURFACE_VIEW;
+    }
 
     public void showPreviewCover() {
         mPreviewCover.setVisibility(View.VISIBLE);
@@ -135,6 +130,15 @@ public class VideoUI implements PieRenderer.PieListener,
     public void hidePreviewCover() {
         if (mPreviewCover != null && mPreviewCover.getVisibility() != View.GONE) {
             mPreviewCover.setVisibility(View.GONE);
+        }
+    }
+
+    public boolean isPreviewCoverVisible() {
+        if ((mPreviewCover != null) &&
+            (mPreviewCover.getVisibility() == View.VISIBLE)) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -167,6 +171,14 @@ public class VideoUI implements PieRenderer.PieListener,
         }
     }
 
+    public synchronized void applySurfaceChange(SURFACE_STATUS status) {
+        if(status == SURFACE_STATUS.HIDE) {
+            mSurfaceView.setVisibility(View.GONE);
+            return;
+        }
+        mSurfaceView.setVisibility(View.VISIBLE);
+    }
+
     public VideoUI(CameraActivity activity, VideoController controller, View parent) {
         mActivity = activity;
         mController = controller;
@@ -179,9 +191,7 @@ public class VideoUI implements PieRenderer.PieListener,
         mSurfaceHolder = mSurfaceView.getHolder();
         mSurfaceHolder.addCallback(this);
         mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        mSurfaceView.addOnLayoutChangeListener(mLayoutListener);
         Log.v(TAG, "Using mdp_preview_content (MDP path)");
-
         View surfaceContainer = mRootView.findViewById(R.id.preview_container);
         surfaceContainer.addOnLayoutChangeListener(new OnLayoutChangeListener() {
             @Override
@@ -191,6 +201,7 @@ public class VideoUI implements PieRenderer.PieListener,
                 int width = right - left;
                 int height = bottom - top;
 
+                tryToCloseSubList();
                 if (mMaxPreviewWidth == 0 && mMaxPreviewHeight == 0) {
                     mMaxPreviewWidth = width;
                     mMaxPreviewHeight = height;
@@ -749,12 +760,14 @@ public class VideoUI implements PieRenderer.PieListener,
                         Gravity.START | Gravity.TOP));
                 mRootView.addView(mMenuLayout);
             }
-            mMenuLayout.addView(popup);
+            mMenuLayout.addView(popup, new RotateLayout.LayoutParams(
+                    LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
             mMenuLayout.setOrientation(mOrientation, true);
         }
         if (level == 2) {
             if (mSubMenuLayout == null) {
                 mSubMenuLayout = new RotateLayout(mActivity, null);
+                mSubMenuLayout.setRootView(mRootView);
                 ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
                         CameraActivity.SETTING_LIST_WIDTH_2, LayoutParams.WRAP_CONTENT);
                 mSubMenuLayout.setLayoutParams(params);
@@ -1026,8 +1039,6 @@ public class VideoUI implements PieRenderer.PieListener,
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         Log.v(TAG, "surfaceChanged: width = " + width + ", height = " + height);
-        // Make sure preview cover is hidden if preview data is available.
-        hidePreviewCover();
     }
 
     @Override
@@ -1110,6 +1121,11 @@ public class VideoUI implements PieRenderer.PieListener,
         }
         RotateTextToast.setOrientation(orientation);
         mOrientation = orientation;
+    }
+
+    public void tryToCloseSubList() {
+        if (mVideoMenu != null)
+            mVideoMenu.tryToCloseSubList();
     }
 
     public int getOrientation() {

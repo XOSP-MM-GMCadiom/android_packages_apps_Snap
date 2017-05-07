@@ -65,6 +65,7 @@
   <string name="pref_camera_manual_focus_entry_scale_mode">Skala modus</string>
   <string name="pref_camera_manual_focus_entry_diopter_mode">Diopter modus</string>
   <string name="pref_camera_manual_focus_entry_off">Av</string>
+  <!-- Still More -->
   <!-- Video HDR-->
   <string name="pref_camera_video_hdr_title">Video HDR</string>
   <!-- CDS mode-->
@@ -264,5 +265,9 @@
   <string name="video_quality_4k_disable_IS">Å aktivere 4k bildestørrelse vil deaktivere stabilisering</string>
   <!-- Toast after 2k4k video is enabled to inform SeeMore has been disabled -->
   <string name="video_quality_4k_disable_SeeMore">SeeMore kan ikke aktiveres under 4k video</string>
+  <!-- Toast after SeeMore has been enabled to show CDS is disabled -->
+  <string name="disable_CDS_during_SeeMore">Å aktivere SeeMore vil deaktivere CDS</string>
+  <!-- Toast after SeeMore has been enabled to show TNR is disabled -->
+  <string name="disable_TNR_during_SeeMore">Å aktivere SeeMore vil deaktivere TNR</string>
   <!-- TODO: Remove these? -->
 </resources>

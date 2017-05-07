@@ -36,6 +36,7 @@
   <!-- Manual exposure -->
   <!-- Manual white balance -->
   <!-- Manual focus -->
+  <!-- Still More -->
   <!-- Video HDR-->
   <!-- CDS mode-->
   <!-- Video CDS-->
@@ -50,6 +51,7 @@
   <!-- Denoise -->
   <!-- ISO -->
   <!-- Antibanding -->
+  <string name="pref_camera_antibanding_entry_1">50 Hz (Eŭropo)</string>
   <!-- Color effect -->
   <!-- Color effect that overexposes and reverses some of the tones. -->
   <!-- Stabilization -->
@@ -86,5 +88,7 @@
   <!-- Toast after enable advanced capture function to inform continuous shot has disabled -->
   <!-- Toast after enable 2k4k video quality to inform IS has disabled -->
   <!-- Toast after 2k4k video is enabled to inform SeeMore has been disabled -->
+  <!-- Toast after SeeMore has been enabled to show CDS is disabled -->
+  <!-- Toast after SeeMore has been enabled to show TNR is disabled -->
   <!-- TODO: Remove these? -->
 </resources>

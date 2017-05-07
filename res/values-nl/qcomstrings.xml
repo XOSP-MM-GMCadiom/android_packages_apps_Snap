@@ -65,6 +65,7 @@
   <string name="pref_camera_manual_focus_entry_scale_mode">Schaalmodus</string>
   <string name="pref_camera_manual_focus_entry_diopter_mode">Dioptrie modus</string>
   <string name="pref_camera_manual_focus_entry_off">Uit</string>
+  <!-- Still More -->
   <!-- Video HDR-->
   <string name="pref_camera_video_hdr_title">Video (HDR)</string>
   <!-- CDS mode-->
@@ -84,7 +85,7 @@
   <!-- Red eye reduction -->
   <string name="pref_camera_redeyereduction_title">Rode ogen verminderen</string>
   <!-- AE bracketing -->
-  <string name="pref_camera_ae_bracket_hdr_title">Reeksopname met automatische belichting (AEB)</string>
+  <string name="pref_camera_ae_bracket_hdr_title">Reeksopname met automatische belichtingscompensatie (AEB)</string>
   <!-- High-framerate recording -->
   <string name="pref_camera_hfr_title">Opname met hoge beeldsnelheid</string>
   <string name="pref_camera_hfr_entry_off">Uit</string>
@@ -229,40 +230,44 @@
   <!-- The alias of CameraActivity for gesture operation -->
   <string name="camera_gesture_title">Camera openen</string>
   <string name="all_in_focus">Alles in focus</string>
-  <string name="refocus_toast">Om laatste foto opnieuw scherp te stellen, tap hier</string>
+  <string name="refocus_toast">Om laatste foto opnieuw scherp te stellen, tik hier</string>
   <!-- Toast messages -->
   <!-- The message is shown in toast when the app encounters an unsupported selection for High-framerate recording mode -->
   <string name="error_app_unsupported_hfr_selection">Opname met hoge beeldsnelheid wordt niet ondersteund bij digitale beeldstabilisatie, time-lapse of HDR.</string>
   <!-- The message is shown in dialog when the app encounters an unsupported resolution for Slow motion mode -->
   <string name="error_app_unsupported_hfr">Slow motion video wordt niet ondersteund bij deze resolutie. Selecteer een lagere resolutie</string>
   <!-- The message is shown in toast when the app encounters an unsupported resolution for Stabilization mode -->
-  <string name="error_app_unsupported_dis">Stabilisatie is niet ondersteund voor de geselecteerde videogrootte. Selecteer een kleinere videogrootte</string>
+  <string name="error_app_unsupported_dis">Stabilisatie wordt niet ondersteund voor de geselecteerde videogrootte. Selecteer een kleinere videogrootte</string>
   <!-- The message is shown in dialog when the app encounters an unsupported resolution for High speed mode -->
   <string name="error_app_unsupported_hsr">Hoge snelheid video wordt niet ondersteund bij deze resolutie</string>
   <!-- The message is shown in dialog when the app encounters an unsupported video codec for HFR mode -->
   <string name="error_app_unsupported_hfr_codec">Alleen H.264-videocodec ondersteund bij opname met hoge beeldsnelheid</string>
   <!-- The message is shown in dialog when the app encounters an unsupported video resolution-->
-  <string name="error_app_unsupported">Videoresolutie niet ondersteund bij deze codec</string>
+  <string name="error_app_unsupported">Videoresolutie wordt niet ondersteund bij deze codec</string>
   <!--The message is shown in dialog when the raw snapshot is selected in Zero shutter lag mode-->
-  <string name="error_app_unsupported_raw">Raw beeldformaat wordt niet ondersteund in Zero shutter lag modus. Selecteer JPEG</string>
+  <string name="error_app_unsupported_raw">Raw beeldformaat wordt niet ondersteund in de stand zonder ontspanvertraging (ZSL). Selecteer JPEG</string>
   <string name="msg_cancel_longshot_for_limited_memory">Niet genoeg geheugen, continue opname wordt afgebroken</string>
   <!-- Toast showing non-supported functionality for flash in AE bracket -->
-  <string name="flash_aebracket_message">Flits is niet ondersteund in AE bracketing modus</string>
+  <string name="flash_aebracket_message">Flits wordt niet ondersteund in AEB-stand</string>
   <!-- toast message for storage location switch -->
   <string name="on_switch_save_path_to_sdcard">Onvoldoende interne opslagruimte, opslaglocatie veranderd naar SD-kaart</string>
   <!-- The message is shown in toast when click showOnMap Menu and there is no map app -->
   <string name="map_activity_not_found_err">Er is geen kaart-app geïnstalleerd om de locatie weer te geven</string>
   <!-- Continous shot enable message -->
-  <string name="longshot_enable_message">Geavanceerde functies worden niet ondersteund in continuopname modus</string>
+  <string name="longshot_enable_message">Geavanceerde functies worden niet ondersteund bij continue opname</string>
   <!-- Advance features enable message -->
-  <string name="advance_feature_enable_msg">Continuopname wordt niet ondersteund als geavanceerde functies ingeschakeld zijn</string>
+  <string name="advance_feature_enable_msg">Continue opname wordt niet ondersteund als geavanceerde functies ingeschakeld zijn</string>
   <!-- Toast after enable HDR function to inform continuous shot has disabled -->
-  <string name="HDR_disable_continuous_shot">Inschakelen van HDR zal doorlopende opnamen uitschakelen</string>
+  <string name="HDR_disable_continuous_shot">Inschakelen van HDR zal continue opnamen uitschakelen</string>
   <!-- Toast after enable advanced capture function to inform continuous shot has disabled -->
-  <string name="advanced_capture_disable_continuous_shot">Inschakelen van geavanceerd vastleggen zal continuopname uitschakelen</string>
+  <string name="advanced_capture_disable_continuous_shot">Inschakelen van geavanceerd vastleggen zal continue opname uitschakelen</string>
   <!-- Toast after enable 2k4k video quality to inform IS has disabled -->
   <string name="video_quality_4k_disable_IS">Inschakelen van 4k video zal stabilisatie uitschakelen</string>
   <!-- Toast after 2k4k video is enabled to inform SeeMore has been disabled -->
   <string name="video_quality_4k_disable_SeeMore">SeeMore kan niet worden ingeschakeld tijdens 4k-video</string>
+  <!-- Toast after SeeMore has been enabled to show CDS is disabled -->
+  <string name="disable_CDS_during_SeeMore">Inschakelen van SeeMore schakelt CDS uit</string>
+  <!-- Toast after SeeMore has been enabled to show TNR is disabled -->
+  <string name="disable_TNR_during_SeeMore">Inschakelen van SeeMore schakelt TNR uit</string>
   <!-- TODO: Remove these? -->
 </resources>
